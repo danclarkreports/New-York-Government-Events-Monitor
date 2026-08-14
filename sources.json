@@ -1,0 +1,235 @@
+{
+"sources": [
+{
+"id": "NYGOV-EVENTS",
+"organization": "State of New York",
+"type": "webny_cards",
+"url": "https://www.ny.gov/events?field_se_end_date={from_date}&field_se_start_date={to_date}&items_per_page=100",
+"coverage": "Statewide central calendar, including hearings, meetings, agency events, and public programs",
+"priority": "Primary statewide feed",
+"enabled": true
+},
+{
+"id": "DPS-SESSIONS",
+"organization": "New York State Public Service Commission",
+"type": "webny_cards",
+"url": "https://dps.ny.gov/public-service-commission-sessions?items_per_page=100",
+"coverage": "Public Service Commission sessions",
+"priority": "Agency-specific",
+"enabled": true
+},
+{
+"id": "DOS-EVENTS",
+"organization": "New York State Department of State",
+"type": "webny_cards",
+"url": "https://dos.ny.gov/events?items_per_page=100",
+"coverage": "Department of State boards, councils, hearings, and public events",
+"priority": "Agency-specific",
+"enabled": true
+},
+{
+"id": "OGS-EVENTS",
+"organization": "New York State Office of General Services",
+"type": "webny_cards",
+"url": "https://ogs.ny.gov/upcoming-events?items_per_page=100",
+"coverage": "OGS public meetings, procurement council meetings, and agency events",
+"priority": "Agency-specific",
+"enabled": true
+},
+{
+"id": "OCM-EVENTS",
+"organization": "New York State Office of Cannabis Management",
+"type": "webny_cards",
+"url": "https://cannabis.ny.gov/events?items_per_page=100",
+"coverage": "Cannabis Control Board, Cannabis Advisory Board, and OCM events",
+"priority": "Agency-specific",
+"enabled": true
+},
+{
+"id": "MTA-BOARD",
+"organization": "Metropolitan Transportation Authority",
+"type": "mta_calendar",
+"url": "https://www.mta.info/transparency/board-and-committee-meetings",
+"coverage": "MTA Board and committee meeting calendar",
+"priority": "Authority-specific",
+"fallback_events": [
+{
+"title": "MTA committee meetings",
+"organization": "Metropolitan Transportation Authority",
+"category": "Committee meeting",
+"date": "2026-07-27",
+"time": "10:00 AM",
+"location": "MTA Board Room, 2 Broadway, NY",
+"summary": "Cached from the official MTA 2026 meeting calendar.",
+"link": "https://www.mta.info/transparency/board-and-committee-meetings/july-2026"
+},
+{
+"title": "MTA Board meeting",
+"organization": "Metropolitan Transportation Authority",
+"category": "Board meeting",
+"date": "2026-07-29",
+"time": "10:00 AM",
+"location": "MTA Board Room, 2 Broadway, NY",
+"summary": "Cached from the official MTA 2026 meeting calendar.",
+"link": "https://www.mta.info/transparency/board-and-committee-meetings/july-2026"
+},
+{
+"title": "MTA committee meetings",
+"organization": "Metropolitan Transportation Authority",
+"category": "Committee meeting",
+"date": "2026-09-28",
+"time": "10:00 AM",
+"location": "MTA Board Room, 2 Broadway, NY",
+"summary": "Cached from the official MTA 2026 meeting calendar.",
+"link": "https://www.mta.info/transparency/board-and-committee-meetings"
+},
+{
+"title": "MTA Board meeting",
+"organization": "Metropolitan Transportation Authority",
+"category": "Board meeting",
+"date": "2026-09-30",
+"time": "10:00 AM",
+"location": "MTA Board Room, 2 Broadway, NY",
+"summary": "Cached from the official MTA 2026 meeting calendar.",
+"link": "https://www.mta.info/transparency/board-and-committee-meetings"
+}
+],
+"enabled": true
+},
+{
+"id": "NYSERDA-BOARD",
+"organization": "New York State Energy Research and Development Authority",
+"type": "nyserda_table",
+"url": "https://www.nyserda.ny.gov/About/Board-Governance/Board-and-Committee-Meetings",
+"coverage": "NYSERDA Board and committee meetings",
+"priority": "Authority-specific",
+"enabled": true
+},
+{
+"id": "THRUWAY-BOARD",
+"organization": "New York State Thruway Authority",
+"type": "thruway_schedule",
+"url": "https://www.thruway.ny.gov/about/meetings",
+"coverage": "Thruway Authority Board meetings and webcasts",
+"priority": "Authority-specific",
+"enabled": true
+},
+{
+"id": "SUNY-TRUSTEES",
+"organization": "State University of New York",
+"type": "suny_schedule",
+"url": "https://www.suny.edu/about/leadership/board-of-trustees/meeting-schedule/",
+"coverage": "SUNY Board of Trustees meeting schedule",
+"priority": "Statewide university system",
+"enabled": true
+},
+{
+"id": "REGENTS",
+"organization": "New York State Board of Regents",
+"type": "regents_schedule",
+"url": "https://www.regents.nysed.gov/meetings/dates",
+"coverage": "Board of Regents monthly meeting dates",
+"priority": "State board",
+"enabled": true
+},
+{
+"id": "CUNY-TRUSTEES",
+"organization": "City University of New York",
+"type": "cuny_schedule",
+"url": "https://www.cuny.edu/private-draft-page/trustees/schedule-of-the-board/",
+"coverage": "CUNY Board, committee, subcommittee, and public hearing schedule",
+"priority": "Public university system",
+"enabled": true
+},
+{
+"id": "CANNABIS-CONTROL-BOARD",
+"organization": "New York State Cannabis Control Board",
+"type": "cannabis_schedule",
+"url": "https://cannabis.ny.gov/cannabis-control-board-meetings",
+"coverage": "Published Cannabis Control Board meeting dates",
+"priority": "State board",
+"enabled": true
+},
+{
+"id": "COELIG-MEETINGS",
+"organization": "Commission on Ethics and Lobbying in Government",
+"type": "coelig_schedule",
+"url": "https://ethics.ny.gov/commission-meetings",
+"coverage": "Commission and committee public meetings",
+"priority": "State commission",
+"enabled": true
+},
+{
+"id": "WCB-MEETINGS",
+"organization": "New York State Workers' Compensation Board",
+"type": "wcb_schedule",
+"url": "https://www.wcb.ny.gov/content/main/TheBoard/BoardMeetings.jsp",
+"coverage": "Workers' Compensation Board monthly meetings",
+"priority": "State board",
+"enabled": true
+},
+{
+"id": "DASNY-BOARD",
+"organization": "Dormitory Authority of the State of New York",
+"type": "dasny_schedule",
+"url": "https://www.dasny.org/about/corporate-info/board/dasny-board-meeting-schedule",
+"coverage": "DASNY Board and committee schedule",
+"priority": "Authority-specific",
+"enabled": true
+},
+{
+"id": "ESD-BOARD",
+"organization": "Empire State Development",
+"type": "esd_cards",
+"url": "https://esd.ny.gov/esd-media-center/board-meetings?items_per_page=100",
+"coverage": "ESD and subsidiary board meetings",
+"priority": "Authority-specific",
+"enabled": true
+},
+{
+"id": "DCJS-OPEN-MEETINGS",
+"organization": "New York State Division of Criminal Justice Services",
+"type": "heading_schedule",
+"url": "https://criminaljustice.ny.gov/pio/openmeetings.htm",
+"coverage": "DCJS-hosted commissions, councils, boards, and subcommittees",
+"priority": "Agency-specific",
+"enabled": true
+},
+{
+"id": "SCOC-MEETINGS",
+"organization": "New York State Commission of Correction",
+"type": "dated_table",
+"url": "https://scoc.ny.gov/commission-meetings",
+"coverage": "Commission of Correction public meetings and agendas",
+"priority": "State commission",
+"enabled": true
+},
+{
+"id": "SLA-EVENTS",
+"organization": "New York State Liquor Authority",
+"type": "webny_cards",
+"url": "https://sla.ny.gov/event-calendar?created_date={from_date}&created_date_1={to_date}&keyword=&page=0",
+"coverage": "Full Board meetings, special meetings, and 500 Foot Hearings",
+"priority": "Authority-specific",
+"enabled": true
+},
+{
+"id": "NYSCCRR-MEETINGS",
+"organization": "New York State Community Commission on Reparations Remedies",
+"type": "nysccrr_schedule",
+"url": "https://www.ny.gov/new-york-state-community-commission-reparations-remedies/about-nysccrr-commission",
+"coverage": "Commission business meetings and public hearings",
+"priority": "State commission",
+"enabled": true
+},
+{
+"id": "BOE-MEETINGS",
+"organization": "New York State Board of Elections",
+"type": "webny_cards",
+"url": "https://elections.ny.gov/commissioners-meetings?items_per_page=100",
+"coverage": "Board of Elections Commissioners' meetings",
+"priority": "State board",
+"enabled": true
+}
+]
+}
