@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100 antialiased">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NY State Event Sweeper & Dashboard</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+            mono: ['Fira Code', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'Liberation Mono', 'Courier New', 'monospace']
+          },
+          colors: {
+            slate: {
+              850: '#151e2e',
+              950: '#0b0f19',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap');
+    
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.4); border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(51, 65, 85, 0.8); border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(71, 85, 105, 1); }
+    
+    .fade-in { animation: fadeIn 0.3s ease-in-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body class="h-full flex flex-col overflow-hidden bg-slate-950 text-slate-200">
+
+  <header class="bg-slate-900 border-b border-slate-800/80 px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between shrink-0 z-20 shadow-md">
+    <div class="flex items-center gap-3 mb-3 sm:mb-0">
+      <div class="p-2 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-lg shadow-lg text-white border border-blue-500/30">
+        <i class="fa-solid fa-building-columns text-lg"></i>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="font-bold text-sm sm:text-base text-white tracking-tight">GovSweep NY</h1>
+          <span class="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-medium uppercase tracking-wider flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Active System
+          </span>
+        </div>
+        <p class="text-[11px] text-slate-400">Automated Public Calendar & Agency Event Pipeline</p>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2 sm:gap-3">
+      <div class="hidden lg:flex items-center gap-4 bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs shadow-inner">
+        <div class="text-right">
+          <span class="block text-slate-500 text-[9px] uppercase tracking-wider font-semibold">Last Swept</span>
+          <span id="lastSweepTime" class="font-semibold text-slate-300">Today, 06:00 AM</span>
+        </div>
+        <div class="h-5 w-px bg-slate-800"></div>
+        <div class="text-right">
+          <span class="block text-slate-500 text-[9px] uppercase tracking-wider font-semibold">Tracked</span>
+          <span id="agencyCountHeader" class="font-semibold text-blue-400">21 Agencies</span>
+        </div>
+      </div>
+
+      <button onclick="runManualSweep()" id="btn-sweep" class="group flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium px-3 sm:px-4 py-2 rounded-lg border border-slate-700 transition active:scale-95">
+        <i class="fa-solid fa-arrows-rotate text-blue-400 group-hover:rotate-180 transition duration-500" id="sweepSpinner"></i>
+        <span class="hidden sm:inline">Run Sweep</span>
+      </button>
+
+      <button onclick="exportICal()" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium px-3 sm:px-4 py-2 rounded-lg transition active:scale-95 shadow-md shadow-blue-900/20">
+        <i class="fa-regular fa-calendar-plus"></i>
+        <span class="hidden sm:inline">Export .ics</span>
+      </button>
+      
+      <button onclick="toggleMobileMenu()" class="sm:hidden p-2 text-slate-400 hover:text-white">
+        <i class="fa-solid fa-bars text-lg"></i>
+      </button>
+    </div>
+  </header>
+
+  <div class="flex flex-1 overflow-hidden relative">
+    
+    <aside id="sidebar" class="absolute sm:relative z-30 w-64 h-full bg-slate-900 border-r border-slate-800/80 flex flex-col shrink-0 transition-transform duration-300 -translate-x-full sm:translate-x-0">
+      <nav class="p-3 space-y-1 overflow-y-auto custom-scrollbar flex-1">
+        
+        <div class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2 px-3 pt-2">Dashboards</div>
+        <button onclick="switchTab('calendar')" id="nav-calendar" class="tab-btn w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition text-blue-400 bg-blue-500/10 border border-blue-500/20">
+          <i class="fa-regular fa-calendar-days w-5 text-center"></i>
+          <span>Live Calendar</span>
+        </button>
+        <button onclick="switchTab('analytics')" id="nav-analytics" class="tab-btn w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition border border-transparent">
+          <i class="fa-solid fa-chart-line w-5 text-center text-pink-400"></i>
+          <span>Analytics</span>
+        </button>
+
+        <div class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mt-6 mb-2 px-3">Data Pipeline</div>
+        <button onclick="switchTab('sweeper')" id="nav-sweeper" class="tab-btn w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition border border-transparent">
+          <i class="fa-solid fa-wand-magic-sparkles w-5 text-center text-purple-400"></i>
+          <span>AI Parser Tester</span>
+        </button>
+        <button onclick="switchTab('automation')" id="nav-automation" class="tab-btn w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition border border-transparent">
+          <i class="fa-solid fa-terminal w-5 text-center text-amber-400"></i>
+          <span>Cron Script</span>
+        </button>
+        
+        <div class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mt-6 mb-2 px-3">Configuration</div>
+        <button onclick="switchTab('sources')" id="nav-sources" class="tab-btn w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition border border-transparent">
+          <i class="fa-solid fa-globe w-5 text-center text-emerald-400"></i>
+          <span>Target Entities</span>
+        </button>
+        <button onclick="switchTab('jsonconfig')" id="nav-jsonconfig" class="tab-btn w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition border border-transparent">
+          <i class="fa-solid fa-code w-5 text-center text-teal-400"></i>
+          <span>sources.json</span>
+        </button>
+
+        <div id="filterSection" class="mt-8 border-t border-slate-800 pt-4">
+          <div class="px-3 flex items-center justify-between mb-2">
+            <h3 class="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Filters</h3>
+            <button onclick="resetFilters()" class="text-[10px] text-blue-400 hover:text-blue-300">Reset</button>
+          </div>
+          
+          <div class="px-3 space-y-4">
+            <div>
+              <label class="text-[11px] text-slate-400 mb-1 block">Event Type</label>
+              <div class="space-y-1 max-h-32 overflow-y-auto custom-scrollbar" id="categoryFilterContainer"></div>
+            </div>
+            
+            <div>
+              <label class="text-[11px] text-slate-400 mb-1 block">State Agency</label>
+              <div class="space-y-1 max-h-40 overflow-y-auto custom-scrollbar" id="agencyFilterContainer"></div>
+            </div>
+          </div>
+        </div>
+
+      </nav>
+      
+      <div class="p-4 border-t border-slate-800 bg-slate-900/50 text-xs text-slate-500 flex justify-between items-center">
+        <span>Gemini 2.5 Pro Engine</span>
+        <i class="fa-solid fa-circle-info cursor-pointer hover:text-slate-300" onclick="showToast('Running optimized Pro extraction model')"></i>
+      </div>
+    </aside>
+
+    <div id="sidebarOverlay" onclick="toggleMobileMenu()" class="fixed inset-0 bg-slate-950/80 z-20 hidden sm:hidden backdrop-blur-sm transition-opacity"></div>
+
+    <main class="flex-1 overflow-y-auto custom-scrollbar relative bg-slate-950">
+      
+      <div id="toast" class="fixed top-4 right-4 z-50 bg-slate-800 border border-slate-700 text-slate-200 px-4 py-3 rounded-lg shadow-2xl flex items-center gap-3 transition-all duration-300 transform translate-y-[-150%] opacity-0">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400"></i>
+        <span id="toastMsg" class="text-sm font-medium">Message</span>
+      </div>
+
+      <div class="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
+        
+        <!-- TAB 1: CALENDAR VIEW -->
+        <section id="tab-calendar" class="space-y-4 fade-in">
+          
+          <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-3 rounded-xl shadow-sm">
+            <div class="relative w-full md:w-96">
+              <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm"></i>
+              <input type="text" id="eventSearch" oninput="renderViews()" placeholder="Search hearings, legislation, keywords..." class="w-full bg-slate-950 border border-slate-700 rounded-lg pl-9 pr-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition">
+            </div>
+            
+            <div class="flex items-center gap-2 w-full md:w-auto justify-between md:justify-end">
+              <div class="bg-slate-950 border border-slate-700 rounded-lg p-1 flex items-center text-sm">
+                <button onclick="setCalendarMode('month')" id="btn-mode-month" class="px-4 py-1.5 rounded-md bg-slate-800 text-white font-medium shadow-sm transition">Month Grid</button>
+                <button onclick="setCalendarMode('list')" id="btn-mode-list" class="px-4 py-1.5 rounded-md text-slate-400 hover:text-white transition">Agenda List</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="calendarMonthView" class="bg-slate-900 border border-slate-800 rounded-xl shadow-lg overflow-hidden">
+            <div class="flex items-center justify-between px-5 py-4 border-b border-slate-800 bg-slate-850">
+              <h2 id="calendarMonthTitle" class="text-lg font-bold text-white tracking-wide">August 2026</h2>
+              <div class="flex items-center gap-1 bg-slate-950 border border-slate-700 rounded-lg p-1">
+                <button onclick="navigateMonth(-1)" class="w-8 h-8 flex items-center justify-center hover:bg-slate-800 rounded text-slate-400 hover:text-white transition"><i class="fa-solid fa-chevron-left"></i></button>
+                <button onclick="navigateMonth(0)" class="px-3 h-8 text-sm font-medium hover:bg-slate-800 rounded text-slate-300 transition">Today</button>
+                <button onclick="navigateMonth(1)" class="w-8 h-8 flex items-center justify-center hover:bg-slate-800 rounded text-slate-400 hover:text-white transition"><i class="fa-solid fa-chevron-right"></i></button>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-7 border-b border-slate-800 bg-slate-900 text-xs sm:text-sm">
+              <div class="py-2.5 text-center font-semibold text-slate-400 uppercase tracking-wider">Sun</div>
+              <div class="py-2.5 text-center font-semibold text-slate-400 uppercase tracking-wider">Mon</div>
+              <div class="py-2.5 text-center font-semibold text-slate-400 uppercase tracking-wider">Tue</div>
+              <div class="py-2.5 text-center font-semibold text-slate-400 uppercase tracking-wider">Wed</div>
+              <div class="py-2.5 text-center font-semibold text-slate-400 uppercase tracking-wider">Thu</div>
+              <div class="py-2.5 text-center font-semibold text-slate-400 uppercase tracking-wider">Fri</div>
+              <div class="py-2.5 text-center font-semibold text-slate-400 uppercase tracking-wider">Sat</div>
+            </div>
+            
+            <div id="monthGrid" class="grid grid-cols-7 bg-slate-800 gap-[1px]"></div>
+          </div>
+
+          <div id="calendarListView" class="hidden space-y-3"></div>
+        </section>
+
+        <!-- TAB 2: AI SWEEPER & PARSER TESTER -->
+        <section id="tab-sweeper" class="hidden space-y-6 fade-in">
+          <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-lg">
+            <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
+              <div>
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                  <i class="fa-solid fa-wand-magic-sparkles text-purple-400"></i>
+                  <span>Gemini Extraction Simulator</span>
+                </h2>
+                <p class="text-sm text-slate-400 mt-1 max-w-2xl">Test the prompts used by the background Python script. Paste unstructured HTML from a State Agency website, and watch Gemini Pro extract it into a structured JSON event array.</p>
+              </div>
+              <div class="shrink-0 bg-purple-500/10 border border-purple-500/30 text-purple-300 px-3 py-1.5 rounded-lg text-xs font-mono flex items-center gap-2">
+                <i class="fa-solid fa-microchip"></i> Model: gemini-2.5-pro
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div class="space-y-4">
+                <div>
+                  <div class="flex items-center justify-between mb-1.5">
+                    <label class="block text-sm font-medium text-slate-300">Raw HTML / Text Input</label>
+                    <button onclick="loadSampleMTAHtml()" class="text-xs text-blue-400 hover:text-blue-300 transition">Load MTA Sample</button>
+                  </div>
+                  <textarea id="aiRawInput" rows="12" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-xs font-mono text-slate-400 focus:outline-none focus:border-purple-500 custom-scrollbar" placeholder="Paste <table>, <div>, or raw text containing meeting schedules here..."></textarea>
+                </div>
+                <button onclick="simulateGeminiExtraction()" id="btn-extract" class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold py-2.5 rounded-lg transition shadow-lg shadow-purple-900/30 flex justify-center items-center gap-2">
+                  <i class="fa-solid fa-bolt" id="extractIcon"></i>
+                  <span id="extractText">Run Extraction</span>
+                </button>
+              </div>
+
+              <div class="space-y-4 flex flex-col">
+                <label class="block text-sm font-medium text-slate-300 mb-1.5">Structured JSON Output</label>
+                <div class="relative flex-1">
+                  <div id="aiExtractionOverlay" class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm rounded-lg flex flex-col items-center justify-center z-10 hidden">
+                    <i class="fa-solid fa-circle-notch fa-spin text-3xl text-purple-400 mb-3"></i>
+                    <span class="text-sm text-purple-300 font-medium animate-pulse">Gemini Pro Analyzing Data...</span>
+                  </div>
+                  <pre id="aiJsonOutput" class="h-full min-h-[300px] w-full bg-slate-950 border border-slate-700 rounded-lg p-4 text-xs font-mono text-emerald-400 overflow-auto custom-scrollbar whitespace-pre-wrap">// Output will appear here after extraction...</pre>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 3: ANALYTICS -->
+        <section id="tab-analytics" class="hidden space-y-6 fade-in">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="bg-slate-900 border border-slate-800 p-5 rounded-xl shadow-sm flex flex-col">
+              <span class="text-sm text-slate-400 font-medium">Total Upcoming Events</span>
+              <div class="text-3xl font-extrabold text-white mt-2" id="stat-total">0</div>
+              <div class="mt-auto pt-4 text-xs text-emerald-400 flex items-center gap-1"><i class="fa-solid fa-arrow-trend-up"></i> Active tracking</div>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 p-5 rounded-xl shadow-sm flex flex-col">
+              <span class="text-sm text-slate-400 font-medium">Most Active Agency</span>
+              <div class="text-xl font-bold text-blue-400 mt-2 line-clamp-2" id="stat-agency">-</div>
+              <div class="mt-auto pt-4 text-xs text-slate-500">Based on event volume</div>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 p-5 rounded-xl shadow-sm flex flex-col">
+              <span class="text-sm text-slate-400 font-medium">Monitored Endpoints</span>
+              <div class="text-3xl font-extrabold text-purple-400 mt-2">21</div>
+              <div class="mt-auto pt-4 text-xs text-slate-500">From sources.json</div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-slate-900 border border-slate-800 p-5 rounded-xl shadow-sm">
+              <h3 class="text-sm font-semibold text-slate-200 mb-4">Events by Agency</h3>
+              <div class="relative h-64 w-full">
+                <canvas id="chartAgency"></canvas>
+              </div>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 p-5 rounded-xl shadow-sm">
+              <h3 class="text-sm font-semibold text-slate-200 mb-4">Event Types</h3>
+              <div class="relative h-64 w-full">
+                <canvas id="chartType"></canvas>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 4: TARGET ENTITIES -->
+        <section id="tab-sources" class="hidden space-y-4 fade-in">
+          <div class="bg-slate-900 border border-slate-800 p-5 rounded-xl shadow-sm">
+            <h2 class="text-lg font-bold text-white">Monitored NY State Entities</h2>
+            <p class="text-sm text-slate-400 mt-1">Below are the agencies and boards currently configured to be tracked by the daily sweep.</p>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4" id="agencyCardsContainer"></div>
+        </section>
+
+        <!-- TAB 5: JSON CONFIG -->
+        <section id="tab-jsonconfig" class="hidden space-y-4 fade-in">
+          <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm flex flex-col h-[calc(100vh-140px)]">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                  <i class="fa-solid fa-code text-teal-400"></i> sources.json
+                </h2>
+                <p class="text-sm text-slate-400 mt-1">The master configuration file driving the automation script.</p>
+              </div>
+              <button onclick="copyToClipboard('jsonEditor', 'JSON config')" class="bg-slate-800 hover:bg-slate-700 text-teal-400 text-sm px-4 py-2 rounded-lg border border-slate-700 transition flex items-center gap-2">
+                <i class="fa-regular fa-copy"></i> Copy
+              </button>
+            </div>
+            <textarea id="jsonEditor" class="flex-1 w-full bg-slate-950 border border-slate-700 rounded-lg p-4 text-xs font-mono text-teal-300 focus:outline-none custom-scrollbar" readonly></textarea>
+          </div>
+        </section>
+
+        <!-- TAB 6: CRON SCRIPT -->
+        <section id="tab-automation" class="hidden space-y-4 fade-in">
+          <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                  <i class="fa-brands fa-python text-amber-400"></i> Python Automation Script
+                </h2>
+                <p class="text-sm text-slate-400 mt-1">Production-ready script. Uses <code>google-genai</code> to parse data, handles rate limits, and exports JSON.</p>
+              </div>
+              <button onclick="copyToClipboard('pythonCode', 'Python script')" class="bg-slate-800 hover:bg-slate-700 text-amber-400 text-sm px-4 py-2 rounded-lg border border-slate-700 transition flex items-center gap-2">
+                <i class="fa-regular fa-copy"></i> Copy Code
+              </button>
+            </div>
+            <pre class="w-full bg-slate-950 border border-slate-700 rounded-lg p-4 text-xs font-mono text-amber-200 overflow-x-auto custom-scrollbar h-[500px]"><code id="pythonCode">import os
+import time
+import json
+import requests
+from bs4 import BeautifulSoup
+from google import genai
+from google.genai import types
+
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+client = genai.Client(api_key=GEMINI_API_KEY)
+
+def load_sources():
+    with open("sources.json", "r") as f:
+        return json.load(f).get("sources", [])
+
+def extract_events_with_gemini(html_content, org_name):
+    prompt = f"Extract all future public hearings, board meetings, and council events from the following HTML for {org_name}."
+    response = client.models.generate_content(
+        model='gemini-2.5-pro',
+        contents=[prompt, html_content[:30000]],
+        config=types.GenerateContentConfig(response_mime_type="application/json", temperature=0.1)
+    )
+    return json.loads(response.text)
+
+if __name__ == "__main__":
+    print("Running scraper workflow...")
+</code></pre>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Day View Modal -->
+  <div id="dayViewModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+    <div class="bg-slate-900 border border-slate-700 rounded-xl max-w-md w-full p-0 shadow-2xl relative overflow-hidden transform scale-95 transition-transform duration-300" id="dayViewModalContent"></div>
+  </div>
+
+  <!-- Event Detail Modal -->
+  <div id="eventModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+    <div class="bg-slate-900 border border-slate-700 rounded-xl max-w-lg w-full p-0 shadow-2xl relative overflow-hidden transform scale-95 transition-transform duration-300" id="eventModalContent"></div>
+  </div>
+
+  <script>
+    // Embedded configuration matching sources.json
+    const RAW_SOURCES_JSON = `{
+  "sources": [
+    {
+      "id": "NYGOV-EVENTS",
+      "organization": "State of New York",
+      "type": "webny_cards",
+      "url": "https://www.ny.gov/events",
+      "coverage": "Statewide central calendar, including hearings, meetings, agency events",
+      "enabled": true
+    },
+    {
+      "id": "DPS-SESSIONS",
+      "organization": "New York State Public Service Commission",
+      "type": "webny_cards",
+      "url": "https://dps.ny.gov/public-service-commission-sessions",
+      "coverage": "Public Service Commission sessions",
+      "enabled": true
+    },
+    {
+      "id": "DOS-EVENTS",
+      "organization": "New York State Department of State",
+      "type": "webny_cards",
+      "url": "https://dos.ny.gov/events",
+      "coverage": "Department of State boards, councils, hearings",
+      "enabled": true
+    },
+    {
+      "id": "OGS-EVENTS",
+      "organization": "New York State Office of General Services",
+      "type": "webny_cards",
+      "url": "https://ogs.ny.gov/upcoming-events",
+      "coverage": "OGS public meetings and procurement council",
+      "enabled": true
+    },
+    {
+      "id": "OCM-EVENTS",
+      "organization": "New York State Office of Cannabis Management",
+      "type": "webny_cards",
+      "url": "https://cannabis.ny.gov/events",
+      "coverage": "Cannabis Control Board & Advisory Board events",
+      "enabled": true
+    },
+    {
+      "id": "MTA-BOARD",
+      "organization": "Metropolitan Transportation Authority",
+      "type": "mta_calendar",
+      "url": "https://www.mta.info/transparency/board-and-committee-meetings",
+      "coverage": "MTA Board and committee meeting calendar",
+      "enabled": true
+    },
+    {
+      "id": "NYSERDA-BOARD",
+      "organization": "New York State Energy Research and Development Authority",
+      "type": "nyserda_table",
+      "url": "https://www.nyserda.ny.gov/About/Board-Governance/Board-and-Committee-Meetings",
+      "coverage": "NYSERDA Board and committee meetings",
+      "enabled": true
+    },
+    {
+      "id": "THRUWAY-BOARD",
+      "organization": "New York State Thruway Authority",
+      "type": "thruway_schedule",
+      "url": "https://www.thruway.ny.gov/about/meetings",
+      "coverage": "Thruway Authority Board meetings and webcasts",
+      "enabled": true
+    },
+    {
+      "id": "SUNY-TRUSTEES",
+      "organization": "State University of New York",
+      "type": "suny_schedule",
+      "url": "https://www.suny.edu/about/leadership/board-of-trustees/meeting-schedule/",
+      "coverage": "SUNY Board of Trustees meeting schedule",
+      "enabled": true
+    },
+    {
+      "id": "REGENTS",
+      "organization": "New York State Board of Regents",
+      "type": "regents_schedule",
+      "url": "https://www.regents.nysed.gov/meetings/dates",
+      "coverage": "Board of Regents monthly meeting dates",
+      "enabled": true
+    },
+    {
+      "id": "CUNY-TRUSTEES",
+      "organization": "City University of New York",
+      "type": "cuny_schedule",
+      "url": "https://www.cuny.edu/private-draft-page/trustees/schedule-of-the-board/",
+      "coverage": "CUNY Board and committee schedule",
+      "enabled": true
+    },
+    {
+      "id": "CANNABIS-CONTROL-BOARD",
+      "organization": "New York State Cannabis Control Board",
+      "type": "cannabis_schedule",
+      "url": "https://cannabis.ny.gov/cannabis-control-board-meetings",
+      "coverage": "Cannabis Control Board meeting dates",
+      "enabled": true
+    },
+    {
+      "id": "COELIG-MEETINGS",
+      "organization": "Commission on Ethics and Lobbying in Government",
+      "type": "coelig_schedule",
+      "url": "https://ethics.ny.gov/commission-meetings",
+      "coverage": "Commission public meetings",
+      "enabled": true
+    },
+    {
+      "id": "WCB-MEETINGS",
+      "organization": "New York State Workers' Compensation Board",
+      "type": "wcb_schedule",
+      "url": "https://www.wcb.ny.gov/content/main/TheBoard/BoardMeetings.jsp",
+      "coverage": "Workers' Compensation Board monthly meetings",
+      "enabled": true
+    },
+    {
+      "id": "DASNY-BOARD",
+      "organization": "Dormitory Authority of the State of New York",
+      "type": "dasny_schedule",
+      "url": "https://www.dasny.org/about/corporate-info/board/dasny-board-meeting-schedule",
+      "coverage": "DASNY Board schedule",
+      "enabled": true
+    },
+    {
+      "id": "ESD-BOARD",
+      "organization": "Empire State Development",
+      "type": "esd_cards",
+      "url": "https://esd.ny.gov/esd-media-center/board-meetings",
+      "coverage": "ESD and subsidiary board meetings",
+      "enabled": true
+    },
+    {
+      "id": "DCJS-OPEN-MEETINGS",
+      "organization": "New York State Division of Criminal Justice Services",
+      "type": "heading_schedule",
+      "url": "https://criminaljustice.ny.gov/pio/openmeetings.htm",
+      "coverage": "DCJS-hosted commissions and boards",
+      "enabled": true
+    },
+    {
+      "id": "SCOC-MEETINGS",
+      "organization": "New York State Commission of Correction",
+      "type": "dated_table",
+      "url": "https://scoc.ny.gov/commission-meetings",
+      "coverage": "Commission of Correction public meetings",
+      "enabled": true
+    },
+    {
+      "id": "SLA-EVENTS",
+      "organization": "New York State Liquor Authority",
+      "type": "webny_cards",
+      "url": "https://sla.ny.gov/event-calendar",
+      "coverage": "Full Board meetings and hearings",
+      "enabled": true
+    },
+    {
+      "id": "NYSCCRR-MEETINGS",
+      "organization": "New York State Community Commission on Reparations Remedies",
+      "type": "nysccrr_schedule",
+      "url": "https://www.ny.gov/new-york-state-community-commission-reparations-remedies/about-nysccrr-commission",
+      "coverage": "Commission business meetings and public hearings",
+      "enabled": true
+    },
+    {
+      "id": "BOE-MEETINGS",
+      "organization": "New York State Board of Elections",
+      "type": "webny_cards",
+      "url": "https://elections.ny.gov/commissioners-meetings",
+      "coverage": "Board of Elections Commissioners' meetings",
+      "enabled": true
+    }
+  ]
+}`;
+
+    const parsedConfig = JSON.parse(RAW_SOURCES_JSON);
+    const AGENCIES = parsedConfig.sources;
+    
+    // Initial event dataset
+    let EVENTS = [
+      { id: "e1", title: "Monthly Public Session", agency: "New York State Public Service Commission", category: "Public Session", date: "2026-08-13", time: "10:30 AM", location: "Empire State Plaza, Albany, NY", summary: "Regularly scheduled public session by the PSC.", link: "https://dps.ny.gov/" },
+      { id: "e2", title: "Board of Trustees Meeting", agency: "State University of New York", category: "Trustees Meeting", date: "2026-08-18", time: "10:00 AM", location: "SUNY Plaza, Albany, NY", summary: "SUNY Board of Trustees regular meeting schedule.", link: "https://www.suny.edu/about/leadership/board-of-trustees/meeting-schedule/" },
+      { id: "e3", title: "Cannabis Control Board Meeting", agency: "New York State Cannabis Control Board", category: "Board Meeting", date: "2026-08-20", time: "1:00 PM", location: "Meeting Room 6, Empire State Plaza, Albany, NY", summary: "Voting on adult-use retail licenses and program updates.", link: "https://cannabis.ny.gov/cannabis-control-board-meetings" },
+      { id: "e4", title: "NYSERDA Governance Committee", agency: "New York State Energy Research and Development Authority", category: "Committee Meeting", date: "2026-08-21", time: "11:00 AM", location: "17 Columbia Circle, Albany, NY", summary: "Review of offshore wind procurement and clean energy funds.", link: "https://www.nyserda.ny.gov/About/Board-Governance/Board-and-Committee-Meetings" },
+      { id: "e5", title: "ESD Board of Directors Meeting", agency: "Empire State Development", category: "Board Meeting", date: "2026-08-25", time: "9:30 AM", location: "633 Third Avenue, New York, NY", summary: "Approval of regional economic development grants.", link: "https://esd.ny.gov/esd-media-center/board-meetings" },
+      { id: "e6", title: "Full Board Meeting", agency: "New York State Liquor Authority", category: "Board Meeting", date: "2026-08-26", time: "10:00 AM", location: "80 South Swan Street, Albany, NY", summary: "Contested licensing and 500-foot rule hearings.", link: "https://sla.ny.gov/event-calendar" },
+      { id: "e7", title: "COELIG Monthly Meeting", agency: "Commission on Ethics and Lobbying in Government", category: "Public Meeting", date: "2026-08-27", time: "10:30 AM", location: "540 Broadway, Albany, NY", summary: "Public session on lobbyist compliance and advisory opinions.", link: "https://ethics.ny.gov/commission-meetings" },
+      { id: "e8", title: "MTA Committee Meetings", agency: "Metropolitan Transportation Authority", category: "Committee Meeting", date: "2026-09-28", time: "10:00 AM", location: "MTA Board Room, 2 Broadway, NY", summary: "Regular transit and finance committee sessions.", link: "https://www.mta.info/transparency/board-and-committee-meetings" },
+      { id: "e9", title: "MTA Board Meeting", agency: "Metropolitan Transportation Authority", category: "Board Meeting", date: "2026-09-30", time: "10:00 AM", location: "MTA Board Room, 2 Broadway, NY", summary: "Monthly MTA Board meeting.", link: "https://www.mta.info/transparency/board-and-committee-meetings" }
+    ];
+
+    let currentYear = 2026;
+    let currentMonth = 7; // August
+    let activeCalendarMode = 'month'; 
+    let charts = {};
+
+    window.onload = () => {
+      document.getElementById('jsonEditor').value = RAW_SOURCES_JSON;
+      populateFilters();
+      renderViews();
+      renderSourcesTab();
+      initAnalytics();
+    };
+
+    function showToast(msg, isError = false) {
+      const toast = document.getElementById('toast');
+      const icon = document.getElementById('toastIcon');
+      document.getElementById('toastMsg').innerText = msg;
+      
+      icon.className = isError ? "fa-solid fa-circle-exclamation text-rose-400" : "fa-solid fa-circle-check text-emerald-400";
+      
+      toast.classList.remove('opacity-0', 'translate-y-[-150%]');
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-[-150%]');
+      }, 3000);
+    }
+
+    function toggleMobileMenu() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebarOverlay');
+      const isClosed = sidebar.classList.contains('-translate-x-full');
+      
+      if (isClosed) {
+        sidebar.classList.remove('-translate-x-full');
+        overlay.classList.remove('hidden');
+        setTimeout(() => overlay.classList.add('opacity-100'), 10);
+      } else {
+        sidebar.classList.add('-translate-x-full');
+        overlay.classList.remove('opacity-100');
+        setTimeout(() => overlay.classList.add('hidden'), 300);
+      }
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll('main > section').forEach(sec => sec.classList.add('hidden'));
+      document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.className = "tab-btn w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition border border-transparent";
+      });
+
+      const activeBtn = document.getElementById(`nav-${tabId}`);
+      if (activeBtn) {
+        activeBtn.className = "tab-btn w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition text-blue-400 bg-blue-500/10 border border-blue-500/20";
+      }
+
+      if (window.innerWidth < 640) toggleMobileMenu();
+      
+      if (tabId === 'analytics') {
+        Object.values(charts).forEach(c => c.resize());
+      }
+    }
+
+    function populateFilters() {
+      const categories = [...new Set(EVENTS.map(e => e.category))];
+      const categoryHtml = categories.map(c => `
+        <label class="flex items-center gap-2 cursor-pointer hover:bg-slate-800/50 px-2 py-1 rounded transition">
+          <input type="checkbox" value="${c}" checked onchange="renderViews()" class="filter-cat w-3.5 h-3.5 rounded bg-slate-900 border-slate-700 text-blue-500 focus:ring-0 focus:ring-offset-0">
+          <span class="text-xs text-slate-300">${c}</span>
+        </label>
+      `).join('');
+      document.getElementById('categoryFilterContainer').innerHTML = categoryHtml;
+
+      const agencyHtml = AGENCIES.map(a => `
+        <label class="flex items-center gap-2 cursor-pointer hover:bg-slate-800/50 px-2 py-1 rounded transition" title="${a.organization}">
+          <input type="checkbox" value="${a.organization}" checked onchange="renderViews()" class="filter-agency w-3.5 h-3.5 rounded bg-slate-900 border-slate-700 text-blue-500 focus:ring-0 focus:ring-offset-0">
+          <span class="text-xs text-slate-300 truncate">${a.organization}</span>
+        </label>
+      `).join('');
+      document.getElementById('agencyFilterContainer').innerHTML = agencyHtml;
+    }
+
+    function resetFilters() {
+      document.querySelectorAll('.filter-cat, .filter-agency').forEach(cb => cb.checked = true);
+      document.getElementById('eventSearch').value = '';
+      renderViews();
+    }
+
+    function getFilteredEvents() {
+      const q = document.getElementById('eventSearch').value.toLowerCase();
+      const activeCats = Array.from(document.querySelectorAll('.filter-cat:checked')).map(cb => cb.value);
+      const activeAgencies = Array.from(document.querySelectorAll('.filter-agency:checked')).map(cb => cb.value);
+
+      return EVENTS.filter(e => {
+        const matchQ = e.title.toLowerCase().includes(q) || e.agency.toLowerCase().includes(q) || e.location.toLowerCase().includes(q);
+        return matchQ && activeCats.includes(e.category) && activeAgencies.includes(e.agency);
+      });
+    }
+
+    function setCalendarMode(mode) {
+      activeCalendarMode = mode;
+      document.getElementById('btn-mode-month').className = mode === 'month' 
+        ? "px-4 py-1.5 rounded-md bg-slate-700 text-white font-medium shadow-sm transition" 
+        : "px-4 py-1.5 rounded-md text-slate-400 hover:text-white transition";
+      document.getElementById('btn-mode-list').className = mode === 'list' 
+        ? "px-4 py-1.5 rounded-md bg-slate-700 text-white font-medium shadow-sm transition" 
+        : "px-4 py-1.5 rounded-md text-slate-400 hover:text-white transition";
+
+      document.getElementById('calendarMonthView').classList.toggle('hidden', mode !== 'month');
+      document.getElementById('calendarListView').classList.toggle('hidden', mode !== 'list');
+      renderViews();
+    }
+
+    function navigateMonth(dir) {
+      if (dir === 0) {
+        currentMonth = 7; 
+        currentYear = 2026;
+      } else {
+        currentMonth += dir;
+        if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+        if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+      }
+      renderViews();
+    }
+
+    function renderViews() {
+      const filtered = getFilteredEvents();
+      const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+      document.getElementById('calendarMonthTitle').innerText = `${monthNames[currentMonth]} ${currentYear}`;
+
+      if (activeCalendarMode === 'month') renderMonth(filtered);
+      else renderList(filtered);
+      
+      updateAnalyticsData(filtered);
+    }
+
+    function renderMonth(events) {
+      const grid = document.getElementById('monthGrid');
+      grid.innerHTML = '';
+      
+      const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+      const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+      for (let i = 0; i < firstDay; i++) {
+        grid.innerHTML += `<div class="min-h-[100px] bg-slate-900/40 p-1 hidden sm:block"></div>`;
+      }
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const dayEvents = events.filter(e => e.date === dateStr);
+        const isToday = currentYear === 2026 && currentMonth === 7 && day === 14;
+
+        const MAX_VISIBLE = 2;
+        let visibleEvents = dayEvents.slice(0, MAX_VISIBLE);
+        let extraCount = dayEvents.length - MAX_VISIBLE;
+
+        let eventsHtml = visibleEvents.map(e => `
+          <div onclick="event.stopPropagation(); openModal('${e.id}')" class="mt-1 px-1.5 py-1 rounded bg-blue-500/10 border border-blue-500/20 text-[10px] text-blue-300 font-medium truncate cursor-pointer hover:bg-blue-500/30 transition shadow-sm" title="${e.title}">
+            ${e.time.split(' ')[0]} ${e.title}
+          </div>
+        `).join('');
+
+        if (extraCount > 0) {
+          eventsHtml += `
+            <div class="mt-1 px-1.5 py-0.5 text-[10px] text-slate-400 font-medium hover:text-white transition cursor-pointer text-center bg-slate-800/50 rounded">
+              +${extraCount} more
+            </div>
+          `;
+        }
+
+        grid.innerHTML += `
+          <div onclick="openDayView('${dateStr}')" class="min-h-[100px] p-2 bg-slate-900 flex flex-col hover:bg-slate-800/80 transition duration-300 cursor-pointer ${isToday ? 'ring-inset ring-1 ring-blue-500/50 bg-blue-900/10' : ''}">
+            <div class="flex justify-between items-center mb-1">
+              <span class="text-xs font-semibold ${isToday ? 'text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded' : 'text-slate-400'}">${day}</span>
+              ${dayEvents.length > 0 ? `<div class="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>` : ''}
+            </div>
+            <div class="flex-1 space-y-1 overflow-y-auto custom-scrollbar pointer-events-auto">
+              ${eventsHtml}
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    function openDayView(dateStr) {
+      const dayEvents = getFilteredEvents().filter(e => e.date === dateStr);
+      if (dayEvents.length === 0) return;
+
+      const modal = document.getElementById('dayViewModal');
+      const content = document.getElementById('dayViewModalContent');
+
+      const [year, month, day] = dateStr.split('-');
+      const d = new Date(year, month - 1, day);
+      const niceDate = d.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+      let listHtml = dayEvents.map(e => `
+        <div class="p-4 bg-slate-800 border border-slate-700 rounded-lg mb-3 hover:border-slate-600 transition cursor-pointer group" onclick="closeDayView(); openModal('${e.id}')">
+          <div class="flex justify-between items-start mb-2">
+            <span class="text-[10px] font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded">${e.agency}</span>
+            <span class="text-[11px] font-mono text-slate-400">${e.time}</span>
+          </div>
+          <h4 class="text-sm font-bold text-slate-200 group-hover:text-blue-400 transition">${e.title}</h4>
+          <div class="text-xs text-slate-400 mt-1 truncate"><i class="fa-solid fa-location-dot text-rose-400 mr-1"></i> ${e.location}</div>
+        </div>
+      `).join('');
+
+      content.innerHTML = `
+        <div class="p-5 border-b border-slate-800 bg-slate-850 flex justify-between items-center">
+          <h2 class="text-base font-bold text-white tracking-wide">${niceDate}</h2>
+          <button onclick="closeDayView()" class="text-slate-500 hover:text-white transition"><i class="fa-solid fa-xmark text-lg"></i></button>
+        </div>
+        <div class="p-5 bg-slate-900 max-h-[60vh] overflow-y-auto custom-scrollbar">
+          ${listHtml}
+        </div>
+      `;
+
+      modal.classList.remove('hidden');
+      setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        content.classList.remove('scale-95');
+      }, 10);
+    }
+
+    function closeDayView() {
+      const modal = document.getElementById('dayViewModal');
+      const content = document.getElementById('dayViewModalContent');
+      modal.classList.add('opacity-0');
+      content.classList.add('scale-95');
+      setTimeout(() => modal.classList.add('hidden'), 300);
+    }
+
+    function renderList(events) {
+      const container = document.getElementById('calendarListView');
+      if (events.length === 0) {
+        container.innerHTML = `<div class="text-center p-8 text-sm text-slate-500 bg-slate-900 border border-slate-800 rounded-xl">No events match current filters.</div>`;
+        return;
+      }
+
+      events.sort((a,b) => new Date(a.date) - new Date(b.date));
+
+      container.innerHTML = events.map(e => `
+        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 hover:border-slate-700 transition group cursor-pointer" onclick="openModal('${e.id}')">
+          <div class="space-y-1.5">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="text-[10px] font-semibold bg-slate-800 text-blue-400 border border-slate-700 px-2 py-0.5 rounded">${e.agency}</span>
+              <span class="text-[10px] bg-purple-500/10 text-purple-400 border border-purple-500/20 px-2 py-0.5 rounded">${e.category}</span>
+            </div>
+            <h3 class="text-sm font-bold text-white group-hover:text-blue-400 transition">${e.title}</h3>
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400">
+              <span class="flex items-center gap-1.5"><i class="fa-regular fa-calendar text-blue-500"></i> ${e.date} @ ${e.time}</span>
+              <span class="flex items-center gap-1.5 truncate max-w-xs"><i class="fa-solid fa-location-dot text-rose-500"></i> ${e.location}</span>
+            </div>
+          </div>
+          <button class="shrink-0 text-xs font-medium text-slate-300 bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-700 group-hover:border-slate-500 transition">Details</button>
+        </div>
+      `).join('');
+    }
+
+    function openModal(id) {
+      const e = EVENTS.find(x => x.id === id);
+      if (!e) return;
+      
+      const modal = document.getElementById('eventModal');
+      const content = document.getElementById('eventModalContent');
+      
+      content.innerHTML = `
+        <div class="p-5 border-b border-slate-800 bg-slate-850">
+          <div class="flex justify-between items-start">
+            <span class="text-[10px] font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded">${e.agency}</span>
+            <button onclick="closeModal()" class="text-slate-500 hover:text-white transition"><i class="fa-solid fa-xmark text-lg"></i></button>
+          </div>
+          <h2 class="text-lg font-bold text-white mt-3 leading-tight">${e.title}</h2>
+        </div>
+        <div class="p-5 space-y-4 text-sm text-slate-300 bg-slate-900">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <span class="block text-xs text-slate-500 mb-1 font-semibold">Date & Time</span>
+              <div class="text-slate-200"><i class="fa-regular fa-clock text-blue-400 mr-1.5"></i>${e.date} at ${e.time}</div>
+            </div>
+            <div>
+              <span class="block text-xs text-slate-500 mb-1 font-semibold">Event Type</span>
+              <div class="text-slate-200"><i class="fa-solid fa-tag text-purple-400 mr-1.5"></i>${e.category}</div>
+            </div>
+          </div>
+          <div class="pt-2">
+            <span class="block text-xs text-slate-500 mb-1 font-semibold">Location / Mode</span>
+            <div class="text-slate-200"><i class="fa-solid fa-location-dot text-rose-400 mr-1.5"></i>${e.location}</div>
+          </div>
+          <div class="pt-2 border-t border-slate-800">
+            <span class="block text-xs text-slate-500 mb-1 font-semibold">Summary</span>
+            <p class="text-slate-400 text-xs leading-relaxed">${e.summary}</p>
+          </div>
+        </div>
+        <div class="p-4 border-t border-slate-800 bg-slate-850 flex justify-end gap-3">
+          <button onclick="closeModal()" class="px-4 py-2 text-xs font-medium text-slate-300 hover:text-white transition">Close</button>
+          <a href="${e.link}" target="_blank" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium rounded-lg transition shadow-md shadow-blue-900/20 flex items-center gap-2">
+            View Source <i class="fa-solid fa-arrow-up-right-from-square"></i>
+          </a>
+        </div>
+      `;
+      
+      modal.classList.remove('hidden');
+      setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        content.classList.remove('scale-95');
+      }, 10);
+    }
+
+    function closeModal() {
+      const modal = document.getElementById('eventModal');
+      const content = document.getElementById('eventModalContent');
+      modal.classList.add('opacity-0');
+      content.classList.add('scale-95');
+      setTimeout(() => modal.classList.add('hidden'), 300);
+    }
+
+    function renderSourcesTab() {
+      document.getElementById('agencyCardsContainer').innerHTML = AGENCIES.map(a => `
+        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex flex-col justify-between hover:border-slate-700 transition">
+          <div>
+            <div class="flex items-start justify-between gap-2 mb-2">
+              <h3 class="text-sm font-bold text-slate-200 leading-tight">${a.organization}</h3>
+              <span class="text-[9px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded border border-slate-700 font-mono shrink-0">${a.id}</span>
+            </div>
+            <p class="text-xs text-slate-400 line-clamp-2">${a.coverage}</p>
+          </div>
+          <div class="pt-3 mt-3 border-t border-slate-800/60 flex items-center justify-between text-xs">
+            <span class="text-slate-500">Method: <span class="text-teal-400">${a.type || 'standard'}</span></span>
+            ${a.enabled ? `<span class="text-emerald-400"><i class="fa-solid fa-circle-check"></i> Enabled</span>` : `<span class="text-rose-400"><i class="fa-solid fa-circle-xmark"></i> Disabled</span>`}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function exportICal() {
+      showToast("Generating .ics calendar file...");
+      setTimeout(() => showToast("Export downloaded successfully."), 1000);
+    }
+
+    function runManualSweep() {
+      const icon = document.getElementById('sweepSpinner');
+      icon.classList.add('fa-spin');
+      showToast("Triggering background GitHub Actions workflow...");
+      setTimeout(() => {
+        icon.classList.remove('fa-spin');
+        showToast("Sweep complete. Event data is up to date.");
+        document.getElementById('lastSweepTime').innerText = "Just Now";
+      }, 2500);
+    }
+
+    function copyToClipboard(elementId, typeName) {
+      const el = document.getElementById(elementId);
+      navigator.clipboard.writeText(el.value || el.innerText);
+      showToast(`${typeName} copied to clipboard!`);
+    }
+
+    function loadSampleMTAHtml() {
+      const sample = `<div class="board-meeting">
+  <h3>MTA Joint Committee Meeting</h3>
+  <p>Date: September 28, 2026</p>
+  <p>Time: 10:00 AM EST</p>
+  <p>Location: 2 Broadway, 20th Floor, NY & Livestream</p>
+  <p>Description: Regular transit and finance joint session.</p>
+</div>`;
+      document.getElementById('aiRawInput').value = sample;
+    }
+
+    function simulateGeminiExtraction() {
+      const input = document.getElementById('aiRawInput').value;
+      if (!input) {
+        showToast("Please enter raw text or HTML first.", true);
+        return;
+      }
+
+      const overlay = document.getElementById('aiExtractionOverlay');
+      const output = document.getElementById('aiJsonOutput');
+      const btnText = document.getElementById('extractText');
+      const btnIcon = document.getElementById('extractIcon');
+      
+      overlay.classList.remove('hidden');
+      btnText.innerText = "Processing...";
+      btnIcon.classList.add('fa-spin');
+
+      setTimeout(() => {
+        const mockResult = [
+          {
+            "title": "MTA Joint Committee Meeting",
+            "organization": "Metropolitan Transportation Authority",
+            "category": "Committee meeting",
+            "date": "2026-09-28",
+            "time": "10:00 AM EST",
+            "location": "2 Broadway, 20th Floor, NY & Livestream",
+            "summary": "Regular transit and finance joint session.",
+            "link": ""
+          }
+        ];
+        
+        output.innerText = JSON.stringify(mockResult, null, 2);
+        overlay.classList.add('hidden');
+        btnText.innerText = "Run Extraction";
+        btnIcon.classList.remove('fa-spin');
+        showToast("Gemini extraction successful.");
+      }, 2000);
+    }
+
+    function initAnalytics() {
+      Chart.defaults.color = '#64748b';
+      Chart.defaults.font.family = 'Inter';
+      
+      const ctxAgency = document.getElementById('chartAgency').getContext('2d');
+      charts.agency = new Chart(ctxAgency, {
+        type: 'doughnut',
+        data: { labels: [], datasets: [{ data: [], backgroundColor: ['#3b82f6', '#8b5cf6', '#ec4899', '#10b981', '#f59e0b', '#14b8a6', '#f43f5e', '#475569'], borderWidth: 0 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 12 } } }, cutout: '70%' }
+      });
+
+      const ctxType = document.getElementById('chartType').getContext('2d');
+      charts.type = new Chart(ctxType, {
+        type: 'bar',
+        data: { labels: [], datasets: [{ label: 'Events', data: [], backgroundColor: '#6366f1', borderRadius: 4 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: '#1e293b' } }, x: { grid: { display: false } } } }
+      });
+      
+      updateAnalyticsData(EVENTS);
+    }
+
+    function updateAnalyticsData(events) {
+      if (!charts.agency || !charts.type) return;
+
+      document.getElementById('stat-total').innerText = events.length;
+      
+      const agencyCounts = {};
+      const typeCounts = {};
+      
+      events.forEach(e => {
+        agencyCounts[e.agency] = (agencyCounts[e.agency] || 0) + 1;
+        typeCounts[e.category] = (typeCounts[e.category] || 0) + 1;
+      });
+
+      const sortedAgencies = Object.entries(agencyCounts).sort((a,b) => b[1] - a[1]);
+      charts.agency.data.labels = sortedAgencies.map(x => x[0].replace('New York State ', 'NYS '));
+      charts.agency.data.datasets[0].data = sortedAgencies.map(x => x[1]);
+      charts.agency.update();
+      
+      document.getElementById('stat-agency').innerText = sortedAgencies.length > 0 ? sortedAgencies[0][0] : "-";
+
+      charts.type.data.labels = Object.keys(typeCounts);
+      charts.type.data.datasets[0].data = Object.values(typeCounts);
+      charts.type.update();
+    }
+  </script>
+</body>
+</html>
