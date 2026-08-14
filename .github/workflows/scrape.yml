@@ -1,0 +1,43 @@
+name: Daily Event Sweeper
+
+on:
+schedule:
+# Runs at 10:00 UTC (6:00 AM Eastern Time) every day
+- cron: '0 10 * * *'
+
+Allows you to click a button on GitHub to run it manually anytime
+
+workflow_dispatch:
+
+jobs:
+scrape-events:
+runs-on: ubuntu-latest
+permissions:
+contents: write # Needed to commit the updated JSON file back to your repository
+
+steps:
+  - name: Checkout repository
+    uses: actions/checkout@v4
+
+  - name: Set up Python
+    uses: actions/setup-python@v5
+    with:
+      python-version: '3.11'
+
+  - name: Install dependencies
+    run: pip install -r requirements.txt
+
+  - name: Run Scraper Script
+    env:
+      # Pulls your secret API key from GitHub Secrets
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+    run: python scraper.py
+
+  - name: Commit and Push changes
+    run: |
+      git config --global user.name "GovSweep Bot"
+      git config --global user.email "actions@github.com"
+      git add ny_events_master.json
+      # Only commit if there are actual changes to avoid failing the workflow
+      git diff --quiet && git diff --staged --quiet || git commit -m "Automated update: Refreshed NY State events"
+      git push
