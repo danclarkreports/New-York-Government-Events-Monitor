@@ -1,0 +1,68 @@
+[
+{
+"id": "e1",
+"title": "Public Statement Hearing - Broadband Mapping",
+"organization": "New York State Public Service Commission",
+"category": "Public Hearing",
+"date": "2026-03-25",
+"time": "TBD",
+"location": "Virtual",
+"summary": "Virtual public statement hearings to solicit input and comments from NY communities regarding the Commission's annual Broadband study and map.",
+"link": "https://dps.ny.gov/"
+},
+{
+"id": "e2",
+"title": "Regent Candidate Interviews",
+"organization": "New York State Board of Regents",
+"category": "Meeting",
+"date": "2026-02-03",
+"time": "11:15 AM",
+"location": "Assembly Parlor, 3rd Floor, NYS Capitol, Albany, NY",
+"summary": "Bipartisan interview process to elect members of the New York State Board of Regents.",
+"link": "https://www.nysenate.gov/calendar/events/february-03-2026/nys-legislature-regent-candidate-interviews"
+},
+{
+"id": "e3",
+"title": "Regent Candidate Interviews (Continued)",
+"organization": "New York State Board of Regents",
+"category": "Meeting",
+"date": "2026-02-04",
+"time": "10:15 AM",
+"location": "Assembly Parlor, 3rd Floor, NYS Capitol, Albany, NY",
+"summary": "Continuation of bipartisan interview process to elect members of the New York State Board of Regents.",
+"link": "https://www.nysenate.gov/calendar/events/february-03-2026/nys-legislature-regent-candidate-interviews"
+},
+{
+"id": "e4",
+"title": "Empire State New Market Corporation Directors Meeting",
+"organization": "Empire State Development",
+"category": "Board Meeting",
+"date": "2026-07-15",
+"time": "3:00 PM",
+"location": "Empire State Development – Albany Office, 625 Broadway, Albany, NY / Empire State Development – NYC Offices, 5 Grand Central East, NY, NY",
+"summary": "Directors meeting for the Empire State New Market Corporation.",
+"link": "https://esd.ny.gov/esd-media-center/board-meetings"
+},
+{
+"id": "e5",
+"title": "USA Niagara Development Corporation Directors Meeting",
+"organization": "Empire State Development",
+"category": "Board Meeting",
+"date": "2026-07-20",
+"time": "11:00 AM",
+"location": "USA Niagara Development Corporation, 222 First Street, Niagara Falls, NY / Empire State Development, 5 Grand Central East, NY, NY",
+"summary": "Directors meeting for the USA Niagara Development Corporation.",
+"link": "https://esd.ny.gov/esd-media-center/board-meetings"
+},
+{
+"id": "e6",
+"title": "Empire State Development Directors Meeting",
+"organization": "Empire State Development",
+"category": "Board Meeting",
+"date": "2026-07-23",
+"time": "9:30 AM",
+"location": "Empire State Development, 5 Grand Central East, NY, NY / USA Niagara Development Corporation, 222 First Street, Niagara Falls, NY",
+"summary": "Directors meeting for Empire State Development.",
+"link": "https://esd.ny.gov/esd-media-center/board-meetings"
+}
+]
